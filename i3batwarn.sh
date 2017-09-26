@@ -1,10 +1,11 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #############################################
 # This is a simple battery warning script.  #
 # It uses i3's nagbar to display warnings.  #
 #                                           #
-# @author agribu                            #
+# @original-author agribu                   #
+# @forked-by Hritik14
 #############################################
 
 # lock file location
@@ -42,32 +43,43 @@ pid=$$
 ps -f -p $pid --no-headers | awk '{print $2,$3}' > $LOCK_FILE
 # starting with process id $pid
 
-# set Battery
-BATTERY=$(ls /sys/class/power_supply/ | grep '^BAT')
-
-# set full path
-ACPI_PATH="/sys/class/power_supply/$BATTERY"
-
-# get battery status
-STAT=$(cat $ACPI_PATH/status)
-
-# get remaining energy value
-REM=`grep "POWER_SUPPLY_CHARGE_NOW" $ACPI_PATH/uevent | cut -d= -f2`
-
-# get full energy value
-FULL=`grep "POWER_SUPPLY_CHARGE_FULL_DESIGN" $ACPI_PATH/uevent | cut -d= -f2`
-
-# get current energy value in percent
-PERCENT=`echo $(( $REM * 100 / $FULL ))`
+# Set hibernate time (in seconds) after critical level
+HIBERNATE_TIME=60
+# set energy limit in percent, where warning should be displayed
+LIMIT=15
+# Set critical limit in percent, where the system should hibernate
+CRITICAL=5
+# Interval to check battery on (sec)
+CHECK_INTERVAL=60
 
 # set error message
 MESSAGE="AWW SNAP! I am running out of juice ...  Please, charge me or I'll have to power down."
+CRITICAL_MESSAGE="Hibernating in 60 seconds. Finish your work, if you can."
 
-# set energy limit in percent, where warning should be displayed
-LIMIT="10"
+while true; do
+	# Get battery details
+	BATTERY=`upower -i $(upower -e | grep BAT)`
+	# get battery status
+	STAT=`echo "$BATTERY" | grep --color=never -E state|awk '{print $2}'`
+	# get remaining energy value (%)
+	PERCENT=`echo "$BATTERY" | grep --color=never -E percentage|xargs|cut -d' ' -f2|sed s/%//`
 
-# show warning if energy limit in percent is less then user set limit and
-# if battery is discharging
-if [ $PERCENT -le "$(echo $LIMIT)" ] && [ "$STAT" == "Discharging" ]; then
-    DISPLAY=:0.0 /usr/bin/i3-nagbar -m "$(echo $MESSAGE)"
-fi
+
+	# Show warning if critcal level reached and hibernate after HIBERNATE_TIME
+	if [ $PERCENT -le $CRITICAL ] && [ "$STAT" == "discharging" ]; then
+		DISPLAY=:0.0 /usr/bin/i3-nagbar -f "pango:Cantarall 12" -m "$(echo $CRITICAL_MESSAGE)"
+		sleep $HIBERNATE_TIME
+		systemctl hibernate
+	fi
+
+	# show warning if energy limit in percent is less than user set limit and
+	# greater than LIMIT-3 (so that it doesn't keep bugging for a long time and
+	# if battery is discharging
+	if [ $PERCENT -le $LIMIT ] && [ $PERCENT -ge $((LIMIT-3)) ] && [ "$STAT" == "discharging" ]; then
+		DISPLAY=:0.0 /usr/bin/i3-nagbar -t warning -f "pango:Cantarall 12" -m "$(echo $MESSAGE)"
+	fi
+	sleep $CHECK_INTERVAL
+done
+
+
+

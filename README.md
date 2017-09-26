@@ -3,12 +3,8 @@ i3-battery-warning
 
 This is a simple battery warning script. It uses i3's nagbar to display warnings.
 
-Let this script run as a cronjob.
+Open your i3 conifg (~/.config/i3/config) and add this line
 
-Open your crontab.
+`exec --no-startup-id /PATH/TO/SCRIPT`
 
-$ crontab -e
-
-Add the folowing line to check battery status every minute
-
-*/1 * * * * /PATH/TO/YOUR/SCRIPT/i3batwarn.sh
+NOTE: chmod +x SCRIPT
