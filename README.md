@@ -7,4 +7,4 @@ Open your i3 conifg (~/.config/i3/config) and add this line
 
 `exec --no-startup-id /PATH/TO/SCRIPT`
 
-NOTE: chmod +x SCRIPT
+NOTE: `chmod +x SCRIPT`
