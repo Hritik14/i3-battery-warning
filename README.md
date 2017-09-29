@@ -11,3 +11,6 @@ Keep the script name `i3batwarn.sh`
 
 ## If you quit i3 often, add this in your i3 config as a precaution.
 `bindsym $mod+Shift+e exec "killall i3batwarn.sh"; exit`
+
+### Depends:
+notify-send

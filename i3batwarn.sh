@@ -8,40 +8,6 @@
 # @forked-by Hritik14
 #############################################
 
-# lock file location
-export LOCK_FILE=/tmp/battery_state.lock
-
-# check if another copy is running
-if [[ -a $LOCK_FILE ]]; then
-
-    pid=$(cat $LOCK_FILE | awk '{print $1}')
-	ppid=$(cat $LOCK_FILE | awk '{print $2}')
-	# validate contents of previous lock file
-	vpid=${pid:-"0"}
-	vppid=${ppid:-"0"}
-
-    if (( $vpid < 2 || $vppid < 2 )); then
-		# corrupt lock file $LOCK_FILE ... Exiting
-		cp -f $LOCK_FILE ${LOCK_FILE}.`date +%Y%m%d%H%M%S`
-		exit
-	fi
-
-    # check if ppid matches pid
-	ps -f -p $pid --no-headers | grep $ppid >/dev/null 2>&1
-
-    if [[ $? -eq 0 ]]; then
-		# another copy of script running with process id $pid
-		exit
-	else
-		# bogus lock file found, removing
-		rm -f $LOCK_FILE >/dev/null
-	fi
-
-fi
-
-pid=$$
-ps -f -p $pid --no-headers | awk '{print $2,$3}' > $LOCK_FILE
-# starting with process id $pid
 
 # Set hibernate time (in seconds) after critical level
 HIBERNATE_TIME=60
@@ -67,7 +33,7 @@ while true; do
 
 	# Show warning if critcal level reached and hibernate after HIBERNATE_TIME
 	if [ $PERCENT -le $CRITICAL ] && [ "$STAT" == "discharging" ]; then
-		DISPLAY=:0.0 /usr/bin/i3-nagbar -f "pango:Cantarall 12" -m "$(echo $CRITICAL_MESSAGE)"
+		notify-send -t 8000 "$CRITICAL_MESSAGE"
 		sleep $HIBERNATE_TIME
 		systemctl hibernate
 	fi
@@ -75,7 +41,8 @@ while true; do
 	# show warning if energy limit in percent is less than user set limit and
 	# if battery is discharging
 	if [ $PERCENT -le $LIMIT ] && [ "$STAT" == "discharging" ]; then
-		DISPLAY=:0.0 /usr/bin/i3-nagbar -t warning -f "pango:Cantarall 12" -m "$(echo $MESSAGE)"
+		notify-send -t 10000 "$MESSAGE"
+
 		#Do not notify again and again
 		while [ $PERCENT -ge $CRITICAL ]; do
 			#TODO: REplace these lines with a function as they appear earlier once.
