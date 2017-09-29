@@ -73,10 +73,23 @@ while true; do
 	fi
 
 	# show warning if energy limit in percent is less than user set limit and
-	# greater than LIMIT-3 (so that it doesn't keep bugging for a long time and
 	# if battery is discharging
-	if [ $PERCENT -le $LIMIT ] && [ $PERCENT -ge $((LIMIT-3)) ] && [ "$STAT" == "discharging" ]; then
+	if [ $PERCENT -le $LIMIT ] && [ "$STAT" == "discharging" ]; then
 		DISPLAY=:0.0 /usr/bin/i3-nagbar -t warning -f "pango:Cantarall 12" -m "$(echo $MESSAGE)"
+		#Do not notify again and again
+		while [ $PERCENT -ge $CRITICAL ]; do
+			#TODO: REplace these lines with a function as they appear earlier once.
+			# Get battery details
+			BATTERY=`upower -i $(upower -e | grep BAT)`
+			# get battery status
+			STAT=`echo "$BATTERY" | grep --color=never -E state|awk '{print $2}'`
+			# get remaining energy value (%)
+			PERCENT=`echo "$BATTERY" | grep --color=never -E percentage|xargs|cut -d' ' -f2|sed s/%//`
+			sleep 60
+			#Just hope that in dropping battery level from $LIMIT to $CRITICAL it takes more than a minute. 
+		done
+
+
 	fi
 	sleep $CHECK_INTERVAL
 done
